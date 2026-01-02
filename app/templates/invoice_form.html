@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Modifier' if invoice else 'Nouvelle' }} Facture - Relances Factures{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>
+            <i class="bi bi-receipt me-2"></i>
+            {{ 'Modifier la facture' if invoice else 'Nouvelle facture' }}
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" action="{{ '/invoices/' + invoice.id|string if invoice else '/invoices/new' }}">
+                    <div class="mb-3">
+                        <label for="client_id" class="form-label">Client *</label>
+                        <select class="form-select" id="client_id" name="client_id" required {{ 'disabled' if invoice }}>
+                            <option value="">Sélectionner un client</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}" 
+                                {{ 'selected' if (invoice and invoice.client_id == client.id) or (selected_client_id == client.id) }}>
+                                {{ client.name }} ({{ client.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if invoice %}
+                        <input type="hidden" name="client_id" value="{{ invoice.client_id }}">
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="invoice_number" class="form-label">Numéro de facture *</label>
+                        <input type="text" class="form-control" id="invoice_number" name="invoice_number" 
+                               value="{{ invoice.invoice_number if invoice else '' }}" 
+                               {{ 'readonly' if invoice }} required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="amount" class="form-label">Montant *</label>
+                            <input type="number" step="0.01" min="0.01" class="form-control" id="amount" name="amount" 
+                                   value="{{ invoice.amount if invoice else '' }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="currency" class="form-label">Devise</label>
+                            <select class="form-select" id="currency" name="currency">
+                                <option value="EUR" {{ 'selected' if not invoice or invoice.currency == 'EUR' }}>EUR</option>
+                                <option value="USD" {{ 'selected' if invoice and invoice.currency == 'USD' }}>USD</option>
+                                <option value="GBP" {{ 'selected' if invoice and invoice.currency == 'GBP' }}>GBP</option>
+                                <option value="CHF" {{ 'selected' if invoice and invoice.currency == 'CHF' }}>CHF</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="issue_date" class="form-label">Date d'émission *</label>
+                            <input type="date" class="form-control" id="issue_date" name="issue_date" 
+                                   value="{{ invoice.issue_date.isoformat() if invoice else today }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="due_date" class="form-label">Date d'échéance *</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date" 
+                                   value="{{ invoice.due_date.isoformat() if invoice else '' }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ invoice.description if invoice else '' }}</textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>
+                            {{ 'Enregistrer' if invoice else 'Créer' }}
+                        </button>
+                        <a href="/invoices" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Information</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">
+                    <i class="bi bi-bell me-1"></i>
+                    Les relances seront automatiquement planifiées selon la séquence par défaut :
+                </p>
+                <ul class="small text-muted">
+                    <li>J+1 : Premier rappel</li>
+                    <li>J+7 : Deuxième rappel</li>
+                    <li>J+15 : Rappel urgent</li>
+                    <li>J+30 : Dernier rappel</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Calculer la date d'échéance par défaut (30 jours après émission)
+    document.getElementById('issue_date').addEventListener('change', function() {
+        const issueDate = new Date(this.value);
+        const dueDate = new Date(issueDate);
+        dueDate.setDate(dueDate.getDate() + 30);
+        document.getElementById('due_date').value = dueDate.toISOString().split('T')[0];
+    });
+</script>
+{% endblock %}

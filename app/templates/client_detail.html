@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ client.name }} - Relances Factures{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/clients">Clients</a></li>
+                <li class="breadcrumb-item active">{{ client.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>{{ client.name }}</h5>
+                <div>
+                    <a href="/clients/{{ client.id }}/edit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>Modifier
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Email</label>
+                        <p><a href="mailto:{{ client.email }}">{{ client.email }}</a></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Entreprise</label>
+                        <p>{{ client.company or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Téléphone</label>
+                        <p>{{ client.phone or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Client depuis</label>
+                        <p>{{ client.created_at.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                    {% if client.address %}
+                    <div class="col-12">
+                        <label class="text-muted small">Adresse</label>
+                        <p>{{ client.address }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/invoices/new?client_id={{ client.id }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Nouvelle facture
+                    </a>
+                    <form action="/clients/{{ client.id }}/delete" method="post">
+                        <button type="submit" class="btn btn-outline-danger w-100" 
+                                onclick="return confirm('Êtes-vous sûr de vouloir désactiver ce client ?')">
+                            <i class="bi bi-trash me-2"></i>Désactiver
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Factures du client -->
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Factures</h5>
+                <a href="/invoices/new?client_id={{ client.id }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus me-1"></i>Ajouter
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>N° Facture</th>
+                                <th>Montant</th>
+                                <th>Échéance</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in invoices %}
+                            <tr>
+                                <td><strong>{{ invoice.invoice_number }}</strong></td>
+                                <td>{{ "%.2f"|format(invoice.amount) }} {{ invoice.currency }}</td>
+                                <td>{{ invoice.due_date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if invoice.status.value == 'pending' %}
+                                        <span class="badge badge-pending">En attente</span>
+                                    {% elif invoice.status.value == 'paid' %}
+                                        <span class="badge badge-paid">Payée</span>
+                                    {% elif invoice.status.value == 'overdue' %}
+                                        <span class="badge badge-overdue">En retard</span>
+                                    {% else %}
+                                        <span class="badge badge-cancelled">Annulée</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="/invoices/{{ invoice.id }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    Aucune facture pour ce client.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Facture {{ invoice.invoice_number }} - Relances Factures{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/invoices">Factures</a></li>
+                <li class="breadcrumb-item active">{{ invoice.invoice_number }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Facture {{ invoice.invoice_number }}</h5>
+                <div>
+                    {% if invoice.status.value == 'pending' %}
+                        <span class="badge badge-pending fs-6">En attente</span>
+                    {% elif invoice.status.value == 'paid' %}
+                        <span class="badge badge-paid fs-6">Payée</span>
+                    {% elif invoice.status.value == 'overdue' %}
+                        <span class="badge badge-overdue fs-6">En retard</span>
+                    {% else %}
+                        <span class="badge badge-cancelled fs-6">Annulée</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Client</label>
+                        <p><a href="/clients/{{ invoice.client.id }}">{{ invoice.client.name }}</a></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Email</label>
+                        <p><a href="mailto:{{ invoice.client.email }}">{{ invoice.client.email }}</a></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Montant</label>
+                        <p class="fs-4 fw-bold text-primary">{{ "%.2f"|format(invoice.amount) }} {{ invoice.currency }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Date d'émission</label>
+                        <p>{{ invoice.issue_date.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Date d'échéance</label>
+                        <p>
+                            {{ invoice.due_date.strftime('%d/%m/%Y') }}
+                            {% if invoice.status.value in ['pending', 'overdue'] and invoice.due_date < today %}
+                                <span class="badge bg-danger ms-2">
+                                    {{ (today - invoice.due_date).days }} jour(s) de retard
+                                </span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if invoice.description %}
+                    <div class="col-12">
+                        <label class="text-muted small">Description</label>
+                        <p>{{ invoice.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if invoice.status.value in ['pending', 'overdue'] %}
+                    <form action="/invoices/{{ invoice.id }}/mark-paid" method="post">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check-circle me-2"></i>Marquer comme payée
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="/invoices/{{ invoice.id }}/edit" class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil me-2"></i>Modifier
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historique des relances -->
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-bell me-2"></i>Historique des relances</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Étape</th>
+                                <th>Date prévue</th>
+                                <th>Envoyée le</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reminder in reminders %}
+                            <tr>
+                                <td>Relance #{{ reminder.step_number }}</td>
+                                <td>{{ reminder.scheduled_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ reminder.sent_at.strftime('%d/%m/%Y %H:%M') if reminder.sent_at else '-' }}</td>
+                                <td>
+                                    {% if reminder.status.value == 'pending' %}
+                                        <span class="badge bg-warning">En attente</span>
+                                    {% elif reminder.status.value == 'sent' %}
+                                        <span class="badge bg-success">Envoyée</span>
+                                    {% elif reminder.status.value == 'failed' %}
+                                        <span class="badge bg-danger" title="{{ reminder.error_message }}">Échec</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Annulée</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if reminder.status.value == 'pending' %}
+                                    <form action="/reminders/{{ reminder.id }}/send" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Envoyer maintenant">
+                                            <i class="bi bi-send"></i>
+                                        </button>
+                                    </form>
+                                    {% elif reminder.email_subject %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                            data-bs-toggle="modal" data-bs-target="#emailModal{{ reminder.id }}"
+                                            title="Voir l'email">
+                                        <i class="bi bi-envelope"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    Aucune relance planifiée.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals pour voir les emails envoyés -->
+{% for reminder in reminders %}
+{% if reminder.email_subject %}
+<div class="modal fade" id="emailModal{{ reminder.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Email - Relance #{{ reminder.step_number }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Sujet:</strong> {{ reminder.email_subject }}</p>
+                <hr>
+                <pre class="bg-light p-3" style="white-space: pre-wrap;">{{ reminder.email_body }}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

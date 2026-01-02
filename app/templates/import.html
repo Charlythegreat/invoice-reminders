@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Import CSV - Relances Factures{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-upload me-2"></i>Import CSV</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" action="/import" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="file" class="form-label">Fichier CSV</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                        <div class="form-text">
+                            Taille maximale : 5 Mo. Encodage accepté : UTF-8 ou Latin-1.
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-2"></i>Importer
+                    </button>
+                </form>
+                
+                {% if result %}
+                <hr class="my-4">
+                <h5>Résultat de l'import</h5>
+                <div class="alert alert-{{ 'success' if not result.errors else 'warning' }}">
+                    <p class="mb-1"><strong>{{ result.total_rows }}</strong> ligne(s) traitée(s)</p>
+                    <p class="mb-1"><strong>{{ result.imported_clients }}</strong> client(s) créé(s)</p>
+                    <p class="mb-0"><strong>{{ result.imported_invoices }}</strong> facture(s) importée(s)</p>
+                </div>
+                
+                {% if result.errors %}
+                <div class="alert alert-danger">
+                    <h6><i class="bi bi-exclamation-triangle me-2"></i>Erreurs :</h6>
+                    <ul class="mb-0">
+                        {% for error in result.errors[:10] %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                        {% if result.errors|length > 10 %}
+                        <li><em>... et {{ result.errors|length - 10 }} autre(s) erreur(s)</em></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Format attendu</h5>
+            </div>
+            <div class="card-body">
+                <p class="small">Le fichier CSV doit contenir les colonnes suivantes :</p>
+                <table class="table table-sm small">
+                    <thead>
+                        <tr>
+                            <th>Colonne</th>
+                            <th>Obligatoire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>client_name</td><td>Non*</td></tr>
+                        <tr><td>client_email</td><td>Oui</td></tr>
+                        <tr><td>company</td><td>Non</td></tr>
+                        <tr><td>invoice_number</td><td>Oui</td></tr>
+                        <tr><td>amount</td><td>Oui</td></tr>
+                        <tr><td>currency</td><td>Non (EUR)</td></tr>
+                        <tr><td>issue_date</td><td>Oui</td></tr>
+                        <tr><td>due_date</td><td>Oui</td></tr>
+                        <tr><td>description</td><td>Non</td></tr>
+                    </tbody>
+                </table>
+                <p class="small text-muted mb-0">
+                    * Si client_name est vide, l'email sera utilisé comme nom.<br>
+                    Les dates doivent être au format YYYY-MM-DD.
+                </p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-download me-2"></i>Exemple</h5>
+            </div>
+            <div class="card-body">
+                <a href="/static/exemple_import.csv" class="btn btn-outline-primary btn-sm" download>
+                    <i class="bi bi-download me-1"></i>Télécharger un modèle
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

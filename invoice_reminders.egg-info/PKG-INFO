@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: invoice-reminders
+Version: 0.1.0
+Summary: Relances automatiques de factures impayées - Email-only MVP
+Requires-Python: >=3.10
+License-File: LICENSE
+Requires-Dist: fastapi
+Requires-Dist: uvicorn[standard]
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: psycopg2-binary
+Requires-Dist: pydantic
+Requires-Dist: python-dotenv
+Requires-Dist: apscheduler
+Requires-Dist: jinja2
+Requires-Dist: requests
+Requires-Dist: email-validator
+Requires-Dist: python-multipart
+Dynamic: license-file

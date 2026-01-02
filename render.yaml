@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: invoice-reminders
+    env: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SENDER_EMAIL
+        sync: false
+      - key: SENDER_NAME
+        sync: false
+      - key: API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: TIMEZONE
+        value: Europe/Paris

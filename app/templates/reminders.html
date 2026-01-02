@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Relances - Relances Factures{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-bell me-2"></i>Relances</h2>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Statut</label>
+                <select name="status" class="form-select">
+                    <option value="">Tous</option>
+                    <option value="pending" {{ 'selected' if request.query_params.get('status') == 'pending' }}>En attente</option>
+                    <option value="sent" {{ 'selected' if request.query_params.get('status') == 'sent' }}>Envoyées</option>
+                    <option value="failed" {{ 'selected' if request.query_params.get('status') == 'failed' }}>Échouées</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-filter me-1"></i>Filtrer
+                </button>
+                <a href="/reminders" class="btn btn-outline-secondary">Réinitialiser</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Facture</th>
+                        <th>Client</th>
+                        <th>Étape</th>
+                        <th>Date prévue</th>
+                        <th>Envoyée le</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reminder in reminders %}
+                    <tr>
+                        <td>
+                            <a href="/invoices/{{ reminder.invoice.id }}">
+                                <strong>{{ reminder.invoice.invoice_number }}</strong>
+                            </a>
+                        </td>
+                        <td>
+                            <a href="/clients/{{ reminder.invoice.client.id }}">
+                                {{ reminder.invoice.client.name }}
+                            </a>
+                        </td>
+                        <td>Relance #{{ reminder.step_number }}</td>
+                        <td>{{ reminder.scheduled_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ reminder.sent_at.strftime('%d/%m/%Y %H:%M') if reminder.sent_at else '-' }}</td>
+                        <td>
+                            {% if reminder.status.value == 'pending' %}
+                                <span class="badge bg-warning">En attente</span>
+                            {% elif reminder.status.value == 'sent' %}
+                                <span class="badge bg-success">Envoyée</span>
+                            {% elif reminder.status.value == 'failed' %}
+                                <span class="badge bg-danger" title="{{ reminder.error_message }}">Échec</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Annulée</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if reminder.status.value == 'pending' %}
+                            <form action="/reminders/{{ reminder.id }}/send" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-primary" title="Envoyer maintenant">
+                                    <i class="bi bi-send"></i> Envoyer
+                                </button>
+                            </form>
+                            {% elif reminder.status.value == 'failed' %}
+                            <form action="/reminders/{{ reminder.id }}/retry" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Réessayer">
+                                    <i class="bi bi-arrow-clockwise"></i> Réessayer
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Aucune relance trouvée.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
